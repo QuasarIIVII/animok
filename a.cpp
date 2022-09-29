@@ -1,8 +1,38 @@
 #include<windows.h>
 
+typedef struct ltwh{SHORT l,t, w,h;}ltwh;//Left Top Width Height
+ltwh wndPos;
 LRESULT CALLBACK WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam){
+	static struct{
+		HDC hdc, hmdc;
+		HBITMAP hmbmp;
+	} mem;
 	switch(Message) {
+		case WM_PAINT:{
+
+			break;
+		}
+		case WM_CREATE:{
+			//Get Window Size
+			wndPos=GetWindowRect(hwnd,reinterpret_cast<LPRECT>(&wndPos));
+			wndPos={reinterpret_cast<RECT>(wndPos).left,
+			reinterpret_cast<RECT>(wndPos).top,
+			reinterpret_cast<RECT>(wndPos).bottom-reinterpret_cast<RECT>(wndPos).top,
+			reinterpret_cast<RECT>(wndPos).right-reinterpret_cast<RECT>(wndPos).left};
+
+			mem.hdc=GetDC(hwnd);
+			mem.hmdc=CreateCompatibleDC(mem.hdc);
+			mem.hmbmp=CreateCompatibleBitmap(mem.hdc,wndPos.w,wndPos.h);	//Compatible Bitmap
+			SelectObject(mem->hmdc,mem->hmbmp);
+
+			break;
+		}
 		case WM_DESTROY: {
+			
+			DeleteObject(mem->hmbmp);
+			DeleteDC(mem->hmdc);
+			ReleaseDC(hwnd,mem->hdc);
+
 			PostQuitMessage(0);
 			break;
 		}
