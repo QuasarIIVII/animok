@@ -1,4 +1,8 @@
 #include<windows.h>
+#include<iostream>
+using namespace std;
+
+#define ARGB(A) (((A)>>16&0xFF) | (A)&0xFF00FF00 | ((A)&0xFF)<<16)
 
 typedef struct LTWH{SHORT l,t, w,h;}LTWH;//Left Top Width Height
 typedef union RECT$LTWH{
@@ -6,14 +10,25 @@ typedef union RECT$LTWH{
 	RECT rect;
 }RECT$LTWH;
 RECT$LTWH wndPos;
+#define wndSzW (wndPos.ltwh.w)
+#define wndSzE (wndPos.ltwh.h)
+
 LRESULT CALLBACK WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam){
 	static struct{
 		HDC hdc, hmdc;
 		HBITMAP hmbmp;
+
+		HPEN hOldPen;
+		HBRUSH hOldBrush;
 	} mem;
+	static PAINTSTRUCT ps;
+
 	switch(Message) {
 		case WM_PAINT:{
-
+			BeginPaint(hwnd, &ps);
+			BitBlt(ps.hdc, 0,0, wndSzW,wndSzE, mem.hmdc, 0,0, SRCCOPY);
+			DefWindowProc(hwnd, Message, wParam, lParam);
+			EndPaint(hwnd, &ps);
 			break;
 		}
 		case WM_CREATE:{
@@ -23,15 +38,23 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam){
 			wndPos.rect.top,
 			wndPos.rect.bottom-wndPos.rect.top,
 			wndPos.rect.right-wndPos.rect.left};
-
+			cout<<wndPos.ltwh.l<<'\t'<<wndPos.ltwh.t<<'\t'<<wndPos.ltwh.w<<'\t'<<wndPos.ltwh.h<<endl;
+			//DrawContext	
 			mem.hdc=GetDC(hwnd);
 			mem.hmdc=CreateCompatibleDC(mem.hdc);
 			mem.hmbmp=CreateCompatibleBitmap(mem.hdc,wndPos.ltwh.w,wndPos.ltwh.h);	//Compatible Bitmap
 			SelectObject(mem.hmdc,mem.hmbmp);
 
+			mem.hOldPen=(HPEN)		SelectObject(mem.hmdc, GetStockObject(DC_PEN));
+			mem.hOldBrush=(HBRUSH)	SelectObject(mem.hmdc, GetStockObject(DC_BRUSH));
+			
+			SetDCBrushColor(mem.hmdc, ARGB(0x26e8e8));
+			Rectangle(mem.hmdc, 50, 50, 100, 200);
 			break;
 		}
 		case WM_DESTROY: {
+			SelectObject(mem.hmdc, mem.hOldPen);
+			SelectObject(mem.hmdc, mem.hOldBrush);
 			
 			DeleteObject(mem.hmbmp);
 			DeleteDC(mem.hmdc);
@@ -57,7 +80,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	wc.hInstance	 = hInstance;
 	wc.hCursor		 = LoadCursor(NULL, IDC_ARROW);
 	
-	wc.hbrBackground = (HBRUSH)(COLOR_WINDOW+1);
+	wc.hbrBackground = (HBRUSH)(COLOR_WINDOW+3);
 	wc.lpszClassName = "WindowClass";
 	wc.hIcon		 = LoadIcon(NULL, IDI_APPLICATION);
 	wc.hIconSm		 = LoadIcon(NULL, IDI_APPLICATION);
@@ -70,8 +93,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	hwnd = CreateWindowEx(WS_EX_CLIENTEDGE,"WindowClass","Yee",WS_VISIBLE|WS_OVERLAPPEDWINDOW,
 		0,
 		0,
-		1280,
-		720,
+		1920,
+		1080,
 		NULL,NULL,hInstance,NULL);
 
 	if(hwnd == NULL){
