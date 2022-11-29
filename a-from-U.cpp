@@ -11,8 +11,7 @@ typedef union RECT$LTWH{
 }RECT$LTWH;
 RECT$LTWH wndPos;
 #define wndSzW (wndPos.ltwh.w)
-#define wndSzH (wndPos.ltwh.h)
-
+#define wndSzE (wndPos.ltwh.h)
 LRESULT CALLBACK WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam){
 	static struct{
 		HDC hdc, hmdc;
@@ -22,22 +21,22 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam){
 		HBRUSH hOldBrush;
 	} mem;
 	static PAINTSTRUCT ps;
+LRESULT OnPaint(HWND hwnd) { //NEW
+				PAINTSTRUCT ps; HDC hdc = BeginPaint(hwnd, &ps); 
+				for (int i = 1; i <= 800 / 50; ++i) {
+					MoveToEx(mem.hmdc, i * 50 -1 , 0, nullptr); 
+					LineTo(mem.hmdc, i * 50 -1 , 500); 
+					} 
+				for (int i = 1; i <= 500 / 50; ++i) { 
+					MoveToEx(mem.hmdc, 0, i * 50, nullptr); 
+					LineTo(mem.hmdc, 800, i * 50); 
+					} 
+					return EndPaint(hwnd, &ps); 
+				}
 	switch(Message) {
 		case WM_PAINT:{
-			SetDCBrushColor(mem.hmdc, ARGB(0xffffff));
-			SetDCPenColor(mem.hmdc, ARGB(0xffffff));
-			for (int i = 2; i < wndPos.ltwh.w / 50 -1; ++i) {
-				MoveToEx(mem.hmdc, i * 50 , 0, nullptr);
-				LineTo(mem.hmdc, i * 50 , wndPos.ltwh.h);
-			}
-			for (int i = 2; i < wndPos.ltwh.h / 50 -1; ++i) {
-				MoveToEx(mem.hmdc, 0, i * 50, nullptr);
-//				LineTo(mem.hmdc, wndPos.ltwh.w, i * 50);
-				LineTo(mem.hmdc, 1920, i * 50);
-			}
-
 			BeginPaint(hwnd, &ps);
-			BitBlt(ps.hdc, 0,0, wndSzW,wndSzH, mem.hmdc, 0,0, SRCCOPY);
+			BitBlt(ps.hdc, 0,0, wndSzW,wndSzE, mem.hmdc, 0,0, SRCCOPY);
 			DefWindowProc(hwnd, Message, wParam, lParam);
 			EndPaint(hwnd, &ps);
 			break;
@@ -47,19 +46,20 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam){
 			GetWindowRect(hwnd,&wndPos.rect);
 			wndPos={wndPos.rect.left,
 			wndPos.rect.top,
-			wndPos.rect.right-wndPos.rect.left,
-			wndPos.rect.bottom-wndPos.rect.top};
+			wndPos.rect.bottom-wndPos.rect.top,
+			wndPos.rect.right-wndPos.rect.left};
 			cout<<wndPos.ltwh.l<<'\t'<<wndPos.ltwh.t<<'\t'<<wndPos.ltwh.w<<'\t'<<wndPos.ltwh.h<<endl;
 			//DrawContext	
 			mem.hdc=GetDC(hwnd);
 			mem.hmdc=CreateCompatibleDC(mem.hdc);
-			mem.hmbmp=CreateCompatibleBitmap(mem.hdc,wndPos.ltwh.w*16,wndPos.ltwh.h);	//Compatible Bitmap
+			mem.hmbmp=CreateCompatibleBitmap(mem.hdc,wndPos.ltwh.w,wndPos.ltwh.h);	//Compatible Bitmap
 			SelectObject(mem.hmdc,mem.hmbmp);
 
 			mem.hOldPen=(HPEN)		SelectObject(mem.hmdc, GetStockObject(DC_PEN));
 			mem.hOldBrush=(HBRUSH)	SelectObject(mem.hmdc, GetStockObject(DC_BRUSH));
 			
-			/*
+			SetDCBrushColor(mem.hmdc, ARGB(0xffffff));
+			//
 			LRESULT OnPaint(HWND hwnd){
 				PAINTSTRUCT ps;
 				HDC hdc = BeginPaint(hwnd, &ps);
@@ -72,8 +72,8 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam){
 					LineTo(mem.hmdc, 800, i * 50);
 					}
 				return EndPaint(hwnd, &ps);
-			}
-			*/
+			} 
+			//
 			break;
 		}
 		case WM_DESTROY: {
@@ -117,8 +117,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	hwnd = CreateWindowEx(WS_EX_CLIENTEDGE,"WindowClass","animok",WS_VISIBLE|WS_OVERLAPPEDWINDOW,
 		0,
 		0,
-		1920,
-		1080,
+		900,
+		900,
 		NULL,NULL,hInstance,NULL);
 
 	if(hwnd == NULL){
