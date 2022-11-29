@@ -13,6 +13,7 @@ RECT$LTWH wndPos;
 #define wndSzW (wndPos.ltwh.w)
 #define wndSzH (wndPos.ltwh.h)
 
+POINT mousePointer;
 LRESULT CALLBACK WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam){
 	static struct{
 		HDC hdc, hmdc;
@@ -127,6 +128,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	}
 	
 	while(GetMessage(&msg, NULL, 0, 0) > 0){
+		mousePointer=msg.pt;
 		TranslateMessage(&msg);
 		DispatchMessage(&msg);
 	}
