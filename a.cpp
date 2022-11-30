@@ -3,6 +3,10 @@
 using namespace std;
 
 #define ARGB(A) (((A)>>16&0xFF) | (A)&0xFF00FF00 | ((A)&0xFF)<<16)
+int memoryBitmapW;
+#define MoveToEx(DEST, T0, X, T1, T2) MoveToEx(T0, ((DEST)*memoryBitmapW) + (X), T1, T2)
+#define LineTo(DEST, T0, X, T1) LineTo(T0, ((DEST)*memoryBitmapW) + (X), T1)
+#define Rectangle(DEST, A, B, C, D, E) Rectangle(A, ((DEST)*memoryBitmapW) + (B), C, ((DEST)*memoryBitmapW) + (D), E);
 
 typedef struct LTWH{SHORT l,t, w,h;}LTWH;//Left Top Width Height
 typedef union RECT$LTWH{
@@ -22,25 +26,21 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam){
 		HPEN hOldPen;
 		HBRUSH hOldBrush;
 	} mem;
+	static struct S0{
+		COORD size, lt, num; //left-top, number of columns and rows
+	}grid;
 	static PAINTSTRUCT ps;
 	switch(Message) {
 		case WM_PAINT:{
-			SetDCBrushColor(mem.hmdc, ARGB(0xffffff));
-			SetDCPenColor(mem.hmdc, ARGB(0xffffff));
-			for (int i = 2; i < wndPos.ltwh.w / 50 -1; ++i) {
-				MoveToEx(mem.hmdc, i * 50 , 0, nullptr);
-				LineTo(mem.hmdc, i * 50 , wndPos.ltwh.h);
-			}
-			for (int i = 2; i < wndPos.ltwh.h / 50 -1; ++i) {
-				MoveToEx(mem.hmdc, 0, i * 50, nullptr);
-//				LineTo(mem.hmdc, wndPos.ltwh.w, i * 50);
-				LineTo(mem.hmdc, 1920, i * 50);
-			}
-
 			BeginPaint(hwnd, &ps);
+			BitBlt(mem.hmdc, grid.lt.X, grid.lt.Y, grid.size.X,grid.size.Y, mem.hmdc, memoryBitmapW * 1,0, SRCCOPY);
 			BitBlt(ps.hdc, 0,0, wndSzW,wndSzH, mem.hmdc, 0,0, SRCCOPY);
 			DefWindowProc(hwnd, Message, wParam, lParam);
 			EndPaint(hwnd, &ps);
+			break;
+		}
+		case WM_MOUSEMOVE:{
+//			cout<<"Mouse : "<<LOWORD(lParam)<<", "<<HIWORD(lParam)<<endl;
 			break;
 		}
 		case WM_CREATE:{
@@ -51,30 +51,34 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam){
 			wndPos.rect.right-wndPos.rect.left,
 			wndPos.rect.bottom-wndPos.rect.top};
 			cout<<wndPos.ltwh.l<<'\t'<<wndPos.ltwh.t<<'\t'<<wndPos.ltwh.w<<'\t'<<wndPos.ltwh.h<<endl;
-			//DrawContext	
+
+			//Setup DrawContext	
 			mem.hdc=GetDC(hwnd);
 			mem.hmdc=CreateCompatibleDC(mem.hdc);
 			mem.hmbmp=CreateCompatibleBitmap(mem.hdc,wndPos.ltwh.w*16,wndPos.ltwh.h);	//Compatible Bitmap
+			memoryBitmapW=wndPos.ltwh.w;
 			SelectObject(mem.hmdc,mem.hmbmp);
 
 			mem.hOldPen=(HPEN)		SelectObject(mem.hmdc, GetStockObject(DC_PEN));
 			mem.hOldBrush=(HBRUSH)	SelectObject(mem.hmdc, GetStockObject(DC_BRUSH));
-			
-			/*
-			LRESULT OnPaint(HWND hwnd){
-				PAINTSTRUCT ps;
-				HDC hdc = BeginPaint(hwnd, &ps);
-				for (int i = 1; i <= 800 / 50; ++i){
-					MoveToEx(mem.hmdc, i * 50 -1 , 0, nullptr);
-					LineTo(mem.hmdc, i * 50 -1 , 500);
-					}
-				for (int i = 1; i <= 500 / 50; ++i){
-					MoveToEx(mem.hmdc, 0, i * 50, nullptr);
-					LineTo(mem.hmdc, 800, i * 50);
-					}
-				return EndPaint(hwnd, &ps);
+
+			//Setup Grid
+			grid.num={15,15};
+			grid.size={wndSzH*8/10, wndSzH*8/10};
+			grid.lt={wndSzH/10,wndSzH/10};
+
+			//Draw Grid
+			SetDCBrushColor(mem.hmdc, ARGB(0xffadff));
+			SetDCPenColor(mem.hmdc, ARGB(0xffffff));
+			Rectangle(0, mem.hmdc, 200, 200, 250, 250);
+			for(int i=grid.num.X-1; i+1;i--){
+				MoveToEx(1, mem.hmdc, (grid.size.X-1) * i / (grid.num.X-1), 0, nullptr);
+				LineTo(1, mem.hmdc, (grid.size.X-1) * i / (grid.num.X-1), grid.size.Y);
 			}
-			*/
+			for(int i=grid.num.Y-1; i+1;i--){
+				MoveToEx(1, mem.hmdc, 0, (grid.size.Y-1) * i / (grid.num.Y-1), nullptr);
+				LineTo(1, mem.hmdc, grid.size.X, (grid.size.Y-1) * i / (grid.num.Y-1));
+			}
 			break;
 		}
 		case WM_DESTROY: {
@@ -95,6 +99,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam){
 }
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow){
+	cout<<"S : "<<GetSystemMetrics(SM_CXSCREEN)<<", "<<GetSystemMetrics(SM_CYSCREEN)<<endl;
 	WNDCLASSEX wc;
 	HWND hwnd;
 	MSG msg;
@@ -118,8 +123,8 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	hwnd = CreateWindowEx(WS_EX_CLIENTEDGE,"WindowClass","animok",WS_VISIBLE|WS_OVERLAPPEDWINDOW,
 		0,
 		0,
-		1920,
-		1080,
+		GetSystemMetrics(SM_CXSCREEN)*3/4,
+		GetSystemMetrics(SM_CYSCREEN)*3/4,
 		NULL,NULL,hInstance,NULL);
 
 	if(hwnd == NULL){
