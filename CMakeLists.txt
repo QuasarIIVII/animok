@@ -7,5 +7,6 @@ project(
   LANGUAGES CXX)
 
 add_compile_options(-mwindows -std=c++20)
+#add_compile_options(-std=c++20)
 
 add_executable (a a.cpp)
