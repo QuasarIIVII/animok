@@ -19,6 +19,9 @@ RECT$LTWH wndPos;
 #define wndSzH (wndPos.ltwh.h)
 
 POINT mousePointer;
+
+#include"gameUpdate.cpp"
+
 LRESULT CALLBACK WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam){
 	static struct{
 		HDC hdc, hmdc;
@@ -33,6 +36,8 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam){
 	static COORD pieceSize;
 	static COORD pos;
 	static PAINTSTRUCT ps;
+	static bool gameTurn=0;
+
 	switch(Message) {
 		case WM_PAINT:{
 			BeginPaint(hwnd, &ps);
@@ -52,8 +57,8 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam){
 					SetDCBrushColor(mem.hmdc,0), SetDCPenColor(mem.hmdc, 0);
 					Rectangle(3, mem.hmdc, 0,0, wndSzW, wndSzH);
 //					Rectangle(0, mem.hmdc, 0,0, wndSzW, wndSzH);
-					BitBlt(mem.hmdc, memoryBitmapW*3 + pieceSize.X, pieceSize.Y, grid.size.X,grid.size.Y, mem.hmdc, memoryBitmapW * 1,0, SRCCOPY);
-					BitBlt(mem.hmdc, memoryBitmapW*3 + pos.X*(grid.size.X-1)/(grid.num.X-1)-(pieceSize.X>>1) + pieceSize.X, pos.Y*(grid.size.Y-1)/(grid.num.Y-1)-(pieceSize.Y>>1) + pieceSize.Y, pieceSize.X,pieceSize.Y, mem.hmdc, memoryBitmapW * 2,0, SRCCOPY);
+					BitBlt(mem.hmdc, memoryBitmapW*3, 0, grid.size.X + (pieceSize.X<<1),grid.size.Y + (pieceSize.Y<<1), mem.hmdc, memoryBitmapW * 4,0, SRCCOPY);
+					BitBlt(mem.hmdc, memoryBitmapW*3 + pos.X*(grid.size.X-1)/(grid.num.X-1)-(pieceSize.X>>1) + pieceSize.X, pos.Y*(grid.size.Y-1)/(grid.num.Y-1)-(pieceSize.Y>>1) + pieceSize.Y, pieceSize.X,pieceSize.Y, mem.hmdc, memoryBitmapW * 2 + pieceSize.X*gameTurn,0, SRCCOPY);
 					BitBlt(mem.hmdc, memoryBitmapW*0 + grid.lt.X - pieceSize.X, grid.lt.Y - pieceSize.Y, grid.size.X + (pieceSize.X<<1),grid.size.Y + (pieceSize.Y<<1), mem.hmdc, memoryBitmapW * 3,0, SRCCOPY);
 					RECT rect={0,0,wndSzW, wndSzH};
 					InvalidateRect(hwnd, &rect, false);
@@ -64,8 +69,17 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam){
 		}
 		case WM_LBUTTONDOWN:{
 			if(pos.X!=-1){
+				int temp;
+				cout<<"click : "<<pos.X<<" "<<pos.Y<<endl;
+				if(temp=gameUpdate(pos.X+1,pos.Y+1)){
+					BitBlt(mem.hmdc, memoryBitmapW*3, 0, grid.size.X + (pieceSize.X<<1),grid.size.Y + (pieceSize.Y<<1), mem.hmdc, memoryBitmapW * 4,0, SRCCOPY);
+					BitBlt(mem.hmdc, memoryBitmapW*3 + pos.X*(grid.size.X-1)/(grid.num.X-1)-(pieceSize.X>>1) + pieceSize.X, pos.Y*(grid.size.Y-1)/(grid.num.Y-1)-(pieceSize.Y>>1) + pieceSize.Y, pieceSize.X,pieceSize.Y, mem.hmdc, memoryBitmapW * 2 + pieceSize.X*gameTurn,0, SRCCOPY);
+					BitBlt(mem.hmdc, memoryBitmapW*4, 0, grid.size.X + (pieceSize.X<<1),grid.size.Y + (pieceSize.Y<<1), mem.hmdc, memoryBitmapW * 3,0, SRCCOPY);
+					BitBlt(mem.hmdc, memoryBitmapW*0 + grid.lt.X - pieceSize.X, grid.lt.Y - pieceSize.Y, grid.size.X + (pieceSize.X<<1),grid.size.Y + (pieceSize.Y<<1), mem.hmdc, memoryBitmapW * 3,0, SRCCOPY);
+					gameTurn=!gameTurn;
+				}
+				cout<<temp<<endl;
 			}
-			cout<<"click : "<<pos.X<<" "<<pos.Y<<endl;
 			break;
 		}
 		case WM_CREATE:{
@@ -114,9 +128,16 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam){
 			Ellipse(2,mem.hmdc, pieceSize.X, 0, pieceSize.X<<1, pieceSize.Y);
 
 			BitBlt(mem.hmdc, memoryBitmapW*0 + grid.lt.X, grid.lt.Y, grid.size.X,grid.size.Y, mem.hmdc, memoryBitmapW * 1,0, SRCCOPY);
+			BitBlt(mem.hmdc, memoryBitmapW*4 + pieceSize.X, pieceSize.Y, grid.size.X,grid.size.Y, mem.hmdc, memoryBitmapW * 1,0, SRCCOPY);
+
+			//Set board
+			gameUpdate(-1,5);
+			gameUpdate(-2,grid.num.X);
+			gameUpdate(-3,grid.num.Y);
 			break;
 		}
 		case WM_DESTROY: {
+			gameUpdate(-4,0);
 			SelectObject(mem.hmdc, mem.hOldPen);
 			SelectObject(mem.hmdc, mem.hOldBrush);
 			
