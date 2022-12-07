@@ -98,7 +98,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam){
 						BitBlt(mem.hmdc, memoryBitmapW*3 + pos.X*(grid.size.X-1)/(grid.num.X-1)-(pieceSize.X>>1) + pieceSize.X, pos.Y*(grid.size.Y-1)/(grid.num.Y-1)-(pieceSize.Y>>1) + pieceSize.Y, pieceSize.X,pieceSize.Y, mem.hmdc, memoryBitmapW * 2 + pieceSize.X*gameTurn,0, SRCCOPY);
 						BitBlt(mem.hmdc, memoryBitmapW*4, 0, grid.size.X + (pieceSize.X<<1),grid.size.Y + (pieceSize.Y<<1), mem.hmdc, memoryBitmapW * 3,0, SRCCOPY);
 						gameEnd=true;
-						MessageBox(NULL, "Black Win!","F U!",MB_OK);
+						MessageBox(NULL, "Black Win!","Fuck You!",MB_OK);
 						DestroyWindow(hwnd);
 						break;
 					}
@@ -107,7 +107,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam){
 						BitBlt(mem.hmdc, memoryBitmapW*3 + pos.X*(grid.size.X-1)/(grid.num.X-1)-(pieceSize.X>>1) + pieceSize.X, pos.Y*(grid.size.Y-1)/(grid.num.Y-1)-(pieceSize.Y>>1) + pieceSize.Y, pieceSize.X,pieceSize.Y, mem.hmdc, memoryBitmapW * 2 + pieceSize.X*gameTurn,0, SRCCOPY);
 						BitBlt(mem.hmdc, memoryBitmapW*4, 0, grid.size.X + (pieceSize.X<<1),grid.size.Y + (pieceSize.Y<<1), mem.hmdc, memoryBitmapW * 3,0, SRCCOPY);
 						gameEnd=true;
-						MessageBox(NULL, "White Win!","F U!",MB_OK);
+						MessageBox(NULL, "White Win!","Goddamn!",MB_OK);
 						DestroyWindow(hwnd);
 						break;
 					}
@@ -197,7 +197,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam){
 }
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow){
-//	FreeConsole();
+	FreeConsole();
 	cout<<"S : "<<GetSystemMetrics(SM_CXSCREEN)<<", "<<GetSystemMetrics(SM_CYSCREEN)<<endl;
 	WNDCLASSEX wc;
 	HWND hwnd;
