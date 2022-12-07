@@ -1,5 +1,14 @@
 #include<windows.h>
 #include<iostream>
+
+#include <gdiplus.h>
+#include <uxtheme.h>  // for DrawThemeParentBackground()
+
+//#pragma comment(lib, "Gdiplus.lib")
+#pragma comment(lib, "libgdiplus.a")
+//#pragma comment(lib, "uxtheme.lib")
+#pragma comment(lib, "libuxtheme.a")
+
 using namespace std;
 
 #define ARGB(A) (((A)>>16&0xFF) | (A)&0xFF00FF00 | ((A)&0xFF)<<16)
@@ -8,6 +17,7 @@ int memoryBitmapW;
 #define LineTo(DEST, T0, X, T1) LineTo(T0, ((DEST)*memoryBitmapW) + (X), T1)
 #define Rectangle(DEST, A, B, C, D, E) Rectangle(A, ((DEST)*memoryBitmapW) + (B), C, ((DEST)*memoryBitmapW) + (D), E)
 #define Ellipse(DEST, A, B, C, D, E) Ellipse(A, ((DEST)*memoryBitmapW) + (B), C, ((DEST)*memoryBitmapW) + (D), E)
+#define DrawText(DEST, A, B, C, D0, D1, D2, D3, E) []()->int{RECT rect={((DEST)*memoryBitmapW) + (D0), D1, ((DEST)*memoryBitmapW) + (D2), D3};return DrawText(A, B, C, &rect, E);}()
 
 typedef struct LTWH{SHORT l,t, w,h;}LTWH;//Left Top Width Height
 typedef union RECT$LTWH{
@@ -37,6 +47,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam){
 	static COORD pos;
 	static PAINTSTRUCT ps;
 	static bool gameTurn=0;
+	static bool gameEnd=false;
 
 	switch(Message) {
 		case WM_PAINT:{
@@ -47,6 +58,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam){
 			break;
 		}
 		case WM_MOUSEMOVE:{
+			if(gameEnd)break;
 //			cout<<"Mouse : "<<LOWORD(lParam)<<", "<<HIWORD(lParam)<<endl;
 			static COORD b={-1,-1};
 			pos={	(LOWORD(lParam)-grid.lt.X+(((grid.size.X)/(grid.num.X-1))>>1))*(grid.num.X-1)/(grid.size.X-1),
@@ -68,15 +80,37 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam){
 			break;
 		}
 		case WM_LBUTTONDOWN:{
+			if(gameEnd)break;
 			if(pos.X!=-1){
 				int temp;
 				cout<<"click : "<<pos.X<<" "<<pos.Y<<endl;
-				if(temp=gameUpdate(pos.X+1,pos.Y+1)){
-					BitBlt(mem.hmdc, memoryBitmapW*3, 0, grid.size.X + (pieceSize.X<<1),grid.size.Y + (pieceSize.Y<<1), mem.hmdc, memoryBitmapW * 4,0, SRCCOPY);
-					BitBlt(mem.hmdc, memoryBitmapW*3 + pos.X*(grid.size.X-1)/(grid.num.X-1)-(pieceSize.X>>1) + pieceSize.X, pos.Y*(grid.size.Y-1)/(grid.num.Y-1)-(pieceSize.Y>>1) + pieceSize.Y, pieceSize.X,pieceSize.Y, mem.hmdc, memoryBitmapW * 2 + pieceSize.X*gameTurn,0, SRCCOPY);
-					BitBlt(mem.hmdc, memoryBitmapW*4, 0, grid.size.X + (pieceSize.X<<1),grid.size.Y + (pieceSize.Y<<1), mem.hmdc, memoryBitmapW * 3,0, SRCCOPY);
-					BitBlt(mem.hmdc, memoryBitmapW*0 + grid.lt.X - pieceSize.X, grid.lt.Y - pieceSize.Y, grid.size.X + (pieceSize.X<<1),grid.size.Y + (pieceSize.Y<<1), mem.hmdc, memoryBitmapW * 3,0, SRCCOPY);
-					gameTurn=!gameTurn;
+				switch(temp=gameUpdate(pos.X+1,pos.Y+1)){
+					case 1:{
+						BitBlt(mem.hmdc, memoryBitmapW*3, 0, grid.size.X + (pieceSize.X<<1),grid.size.Y + (pieceSize.Y<<1), mem.hmdc, memoryBitmapW * 4,0, SRCCOPY);
+						BitBlt(mem.hmdc, memoryBitmapW*3 + pos.X*(grid.size.X-1)/(grid.num.X-1)-(pieceSize.X>>1) + pieceSize.X, pos.Y*(grid.size.Y-1)/(grid.num.Y-1)-(pieceSize.Y>>1) + pieceSize.Y, pieceSize.X,pieceSize.Y, mem.hmdc, memoryBitmapW * 2 + pieceSize.X*gameTurn,0, SRCCOPY);
+						BitBlt(mem.hmdc, memoryBitmapW*4, 0, grid.size.X + (pieceSize.X<<1),grid.size.Y + (pieceSize.Y<<1), mem.hmdc, memoryBitmapW * 3,0, SRCCOPY);
+						BitBlt(mem.hmdc, memoryBitmapW*0 + grid.lt.X - pieceSize.X, grid.lt.Y - pieceSize.Y, grid.size.X + (pieceSize.X<<1),grid.size.Y + (pieceSize.Y<<1), mem.hmdc, memoryBitmapW * 3,0, SRCCOPY);
+						gameTurn=!gameTurn;
+						break;
+					}
+					case 0x1|0x3:{
+						BitBlt(mem.hmdc, memoryBitmapW*3, 0, grid.size.X + (pieceSize.X<<1),grid.size.Y + (pieceSize.Y<<1), mem.hmdc, memoryBitmapW * 4,0, SRCCOPY);
+						BitBlt(mem.hmdc, memoryBitmapW*3 + pos.X*(grid.size.X-1)/(grid.num.X-1)-(pieceSize.X>>1) + pieceSize.X, pos.Y*(grid.size.Y-1)/(grid.num.Y-1)-(pieceSize.Y>>1) + pieceSize.Y, pieceSize.X,pieceSize.Y, mem.hmdc, memoryBitmapW * 2 + pieceSize.X*gameTurn,0, SRCCOPY);
+						BitBlt(mem.hmdc, memoryBitmapW*4, 0, grid.size.X + (pieceSize.X<<1),grid.size.Y + (pieceSize.Y<<1), mem.hmdc, memoryBitmapW * 3,0, SRCCOPY);
+						gameEnd=true;
+						MessageBox(NULL, "Black Win!","F U!",MB_OK);
+						DestroyWindow(hwnd);
+						break;
+					}
+					case 0x1|0x5:{
+						BitBlt(mem.hmdc, memoryBitmapW*3, 0, grid.size.X + (pieceSize.X<<1),grid.size.Y + (pieceSize.Y<<1), mem.hmdc, memoryBitmapW * 4,0, SRCCOPY);
+						BitBlt(mem.hmdc, memoryBitmapW*3 + pos.X*(grid.size.X-1)/(grid.num.X-1)-(pieceSize.X>>1) + pieceSize.X, pos.Y*(grid.size.Y-1)/(grid.num.Y-1)-(pieceSize.Y>>1) + pieceSize.Y, pieceSize.X,pieceSize.Y, mem.hmdc, memoryBitmapW * 2 + pieceSize.X*gameTurn,0, SRCCOPY);
+						BitBlt(mem.hmdc, memoryBitmapW*4, 0, grid.size.X + (pieceSize.X<<1),grid.size.Y + (pieceSize.Y<<1), mem.hmdc, memoryBitmapW * 3,0, SRCCOPY);
+						gameEnd=true;
+						MessageBox(NULL, "White Win!","F U!",MB_OK);
+						DestroyWindow(hwnd);
+						break;
+					}
 				}
 				cout<<temp<<endl;
 			}
@@ -120,7 +154,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam){
 			}
 
 			//Draw Pieces
-			pieceSize={50,50};
+			pieceSize={wndSzH*8*8/10/10/15,wndSzH*8*8/10/10/15};
 			SetDCPenColor(mem.hmdc, ARGB(0xffffff));
 			SetDCBrushColor(mem.hmdc, ARGB(0x000000));
 			Ellipse(2,mem.hmdc, 0, 0, pieceSize.X, pieceSize.Y);
@@ -129,6 +163,14 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam){
 
 			BitBlt(mem.hmdc, memoryBitmapW*0 + grid.lt.X, grid.lt.Y, grid.size.X,grid.size.Y, mem.hmdc, memoryBitmapW * 1,0, SRCCOPY);
 			BitBlt(mem.hmdc, memoryBitmapW*4 + pieceSize.X, pieceSize.Y, grid.size.X,grid.size.Y, mem.hmdc, memoryBitmapW * 1,0, SRCCOPY);
+
+			SetDCPenColor(mem.hmdc, ARGB(0x808080));
+			SetDCBrushColor(mem.hmdc, ARGB(0x808080));
+//			Rectangle(5, mem.hmdc, 0, 0, wndSzW, wndSzH>>2);
+//			{RECT rect={0,0,100,100};DrawText(mem.hmdc, "Wa", -1, &rect, DT_CENTER|DT_VCENTER);}
+//			DrawText(1, mem.hmdc, "Wa", -1, 0,0,100,100, DT_CENTER|DT_VCENTER);
+//			MessageBox
+			
 
 			//Set board
 			gameUpdate(-1,5);
@@ -188,7 +230,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 		MessageBox(NULL, "Window Creation Failed!","Error!",MB_ICONEXCLAMATION|MB_OK);
 		return 0;
 	}
-	
+
+	// Assign image to button
+//	Gdiplus::Bitmap* m_pBitmap;
+//	HICON hicon;
+//	m_pBitmap = Gdiplus::Bitmap::FromFile(L"IMG_3203.PNG");
+//	m_pBitmap->GetHICON(&hicon);  
+
 	while(GetMessage(&msg, NULL, 0, 0) > 0){
 		mousePointer=msg.pt;
 		TranslateMessage(&msg);
