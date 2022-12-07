@@ -30,6 +30,8 @@ RECT$LTWH wndPos;
 
 POINT mousePointer;
 
+int32_t _setfN, _setX, _setY;
+
 #include"gameUpdate.cpp"
 
 LRESULT CALLBACK WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam){
@@ -136,7 +138,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam){
 			mem.hOldBrush=(HBRUSH)	SelectObject(mem.hmdc, GetStockObject(DC_BRUSH));
 
 			//Setup Grid
-			grid.num={15,15};
+			grid.num={_setX,_setY};
 			grid.size={wndSzH*8/10, wndSzH*8/10};
 			grid.lt={wndSzH/10,wndSzH/10};
 
@@ -154,7 +156,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam){
 			}
 
 			//Draw Pieces
-			pieceSize={wndSzH*8*8/10/10/15,wndSzH*8*8/10/10/15};
+			pieceSize={wndSzH*8*8/10/10/grid.num.X,wndSzH*8*8/10/10/grid.num.Y};
 			SetDCPenColor(mem.hmdc, ARGB(0xffffff));
 			SetDCBrushColor(mem.hmdc, ARGB(0x000000));
 			Ellipse(2,mem.hmdc, 0, 0, pieceSize.X, pieceSize.Y);
@@ -173,7 +175,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam){
 			
 
 			//Set board
-			gameUpdate(-1,5);
+			gameUpdate(-1,_setfN);
 			gameUpdate(-2,grid.num.X);
 			gameUpdate(-3,grid.num.Y);
 			break;
@@ -198,6 +200,11 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT Message, WPARAM wParam, LPARAM lParam){
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow){
 	FreeConsole();
+	{
+		FILE*settingFile=fopen("Settings.txt", "r");
+		fscanf(settingFile,"%d %d %d", &_setfN, &_setX, &_setY);
+		fclose(settingFile);
+	}
 	cout<<"S : "<<GetSystemMetrics(SM_CXSCREEN)<<", "<<GetSystemMetrics(SM_CYSCREEN)<<endl;
 	WNDCLASSEX wc;
 	HWND hwnd;
